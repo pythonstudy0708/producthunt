@@ -1,4 +1,30 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Product
+from django.utils import timezone
 
 def home(request):
     return render(request, 'products/home.html')
+
+@login_required
+def create(request):
+    if request.method == 'POST':
+        if request.POST['title'] and request.POST['body'] and request.POST['url'] and request.POST['image'] and request.POST['icon']:
+            product = Product()
+            if request.POST['url'].startswith('http://') or request.POST['url'].startswith('https://'):
+                product.url = request.POST['url']
+            else:
+                product.url = 'http://' + request.POST['url']
+            product.title = request.POST['title']
+            product.body = request.POST['body']
+            product.image = request.POST['image']
+            product.icon = request.POST['icon']
+            product.pub_date = timezone.datetime.now()
+            product.hunter = request.user
+            product.save
+            return redirect('home')
+
+        else:
+            return render(request, 'products/home.html', {'error':'All fields need to be provided'})
+    else:
+        return render(request, 'products/home.html')
